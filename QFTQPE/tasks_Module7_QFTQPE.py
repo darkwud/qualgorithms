@@ -1,44 +1,62 @@
-from psiqworkbench import Qubits
+from psiqworkbench import Qubits, Units
+import math
 
 # In the first three tasks, you have to prepare the given state using quantum Fourier transform.
 # You do not need to implement QFT yourself or to apply it as part of your solution; 
 # you need to put the given qubits into such a state that applying QFT to them converts them into the required state.
 # Check out the code of the testing harness in test_tasks.py to see how exactly the testing is done.
 
-# Task 1. Prepare periodic state using QFT (1 point).
+
+##############################################################################
+# Task 1. Prepare periodic state using QFT .
 # Input: a Qubits register of length n ≥ 2 in the |0...0⟩ state.
 # Goal: create the state such that applying QFT to it prepares the following state:
 #       1/sqrt(N) Σₖ exp(2πik/N) |k⟩, where N = 2ⁿ.
 # For example, for n = 2 N = 4, and the goal state is 
 #       1/2 (|0⟩ + i|1⟩ - |2⟩ - i|3⟩).
 def task_1_periodic_state_prep(reg: Qubits) -> None:
-    # Write your code here
-    ...
+    
+    # Apply an X gate to the least significant qubit to prepare the state |1⟩.
+    reg[0].x()
 
-
-# Task 2. Prepare equal superposition of odd states using QFT (1 point).
+##############################################################################
+# Task 2. Prepare equal superposition of odd states using QFT .
 # Input: a Qubits register of length n ≥ 2 in the |0...0⟩ state.
 # Goal: create the state such that applying QFT to it prepares the following state:
 #       1/sqrt(2ⁿ⁻¹) (|1⟩ + |3⟩ + ... + |2ⁿ-1⟩).
 # For example, for n = 2 the goal state is 
 #       1/sqrt(2) (|1⟩ + |3⟩).
 def task_2_odd_superposition_prep(reg: Qubits) -> None:
-    # Write your code here
-    ...
 
+    n = len(reg)
+    
+    # Put the most significant qubit into the |-⟩ state
+    reg[n-1].x()
+    reg[n-1].had()
 
-# Task 3. Prepare superposition of cosines using QFT (3 points).
+##############################################################################
+# Task 3. Prepare superposition of cosines using QFT.
 # Input: a Qubits register of length n ≥ 2 in the |0...0⟩ state.
 # Goal: create the state such that applying QFT to it prepares the following state:
 #       1/sqrt(2ⁿ⁻¹) Σₖ cos(2πk/N) |k⟩, where N = 2ⁿ.
 # For example, for n = 2 N = 4, and the goal state is 
 #       1/sqrt(2) (cos(0)|0⟩ + cos(π/2)|1⟩ + cos(π)|2⟩ + cos(3π/2)|3⟩) = 1/sqrt(2) (|0⟩ - |2⟩).
 def task_3_cosines_prep(reg: Qubits) -> None:
-    # Write your code here
-    ...
+    
+    n = len(reg)
+    
+    # Qubit 0 is 1 in both |1⟩ and |N-1⟩
+    reg[0].x()
+    
+    # Superposition on qubit 1
+    reg[1].had()
+    
+    # Entangle the rest of the qubits (from index 2 up to n-1) to either 0s or 1s.
+    for i in range(2, n):
+        reg[i].x(cond=reg[1])
 
-
-# Task 4. Eigenstates of the single-qubit gate (1 point).
+##############################################################################
+# Task 4. Eigenstates of the single-qubit gate.
 # Inputs:
 #      1) a Qubits register of length 1 in the |0⟩ state.
 #      2) a real eigenvalue (+1 or -1).
@@ -47,11 +65,20 @@ def task_3_cosines_prep(reg: Qubits) -> None:
 #       \ 0.8 -0.6 /
 # You can prepare these eigenstates up to a global phase.
 def task_4_single_qubit_eigenstate(reg: Qubits, eigenvalue: float) -> None:
-    # Write your code here
-    ...
+
+    if eigenvalue == 1:
+        # Calculate the angle for the +1 eigenstate
+        theta = 2 * math.acos(2 / math.sqrt(5))
+    else: 
+        # Calculate the angle for the -1 eigenstate
+        theta = 2 * math.asin(-2 / math.sqrt(5))
+        
+    # Apply the Ry rotation to the qubit!
+    reg[0].ry(theta * Units.rad)
 
 
-# Task 5. Eigenstates of the two-qubit gate (2 points).
+##############################################################################
+# Task 5. Eigenstates of the two-qubit gate .
 # Inputs:
 #      1) a Qubits register of length 2 in the |00⟩ state.
 #      2) a complex eigenvalue (+1, -1, i, or -i).
@@ -62,11 +89,27 @@ def task_4_single_qubit_eigenstate(reg: Qubits, eigenvalue: float) -> None:
 #       \ 0  0  0 -1 /
 # You can prepare these eigenstates up to a global phase.
 def task_5_two_qubit_eigenstate(reg: Qubits, eigenvalue: complex) -> None:
-    # Write your code here
-    ...
 
+    if eigenvalue == 1:
+        pass 
+        
+    elif eigenvalue == -1:
+        reg[0].x()
+        reg[1].x()
+        
+    elif eigenvalue == 1j:
+        reg[0].had()               
+        reg[1].x(cond=reg[0])      
+        reg[0].x()                 
+        
+    elif eigenvalue == -1j:
+        reg[0].x()                 
+        reg[0].had()              
+        reg[1].x(cond=reg[0])     
+        reg[0].x()                 
 
-# Task 6. 3-bit adaptive phase estimation (2 points).
+##############################################################################
+# Task 6. 3-bit adaptive phase estimation .
 # In this task, we'll consider 3-bit adaptive phase estimation algorithm
 # that runs for a unitary/eigenvector pair with eigenphase θ = 0.θ₁θ₂θ₃.
 # The eigenphase is guaranteed to have three binary digits of precision.
@@ -87,11 +130,22 @@ def task_5_two_qubit_eigenstate(reg: Qubits, eigenvalue: complex) -> None:
 # Goal: Apply the sequence of gates to the phase qubit so that the final measurement 
 # always returns the correct _most_ significant bit θ₁.
 def task_6_adaptive_phase_estimation(phase: Qubits, theta2: int, theta3: int) -> None:
-    # Write your code here
-    ...
 
+    # Update phase if 1
+    if theta2 == 1:
+        # Subtract pi/2
+        phase[0].rz(-math.pi / 2 * Units.rad)
+        
+    # Update phase if 1
+    if theta3 == 1:
+        # Subtract pi/4
+        phase[0].rz(-math.pi / 4 * Units.rad)
+        
+    # Apply the final Hadamard gate
+    phase[0].had()
 
-# Task 7 (extra credit). Reverse-engineer QPE (2 points).
+##############################################################################
+# Task 7 (extra credit). Reverse-engineer QPE.
 # Input: a real number φ in [0, 1) interval.
 # Output: a tuple of two function (U, P) which describe a single-qubit unitary and a eigenstate preparation function
 #         that together have an eigenphase φ (within given error).
@@ -111,18 +165,25 @@ def task_7_reverse_engineer_qpe(phase: float):
     # This code defines the signatures of two functions that you need to implement
     # and then returns these two functions.
 
+    # Round phase nearest to 8-bit to prevent spectral leakage
+    rounded_phase = round(phase * 256) / 256
+
     def unitary(reg: Qubits, cond: Qubits) -> None:
         # Write your code here
         # Remember that your unitary has to have a controlled variant defined!
         # For example, to implement a unitary Z, uncomment the following line:
         # reg.z(cond=cond)
-        ...
+        
+        # Use rounded phase to find angle
+        angle = 4 * math.pi * rounded_phase
+        reg.rz(angle * Units.rad, cond=cond)
 
     def stateprep(reg: Qubits) -> None:
         # Write your code here
         # State preparation unitary doesn't have to have a controlled variant defined.
         # For example, to implement a unitary X that prepares the state |1⟩, uncomment the following line:
         # reg.x()
-        ...
 
+        # Update |1⟩ state 
+        reg.x()
     return unitary, stateprep
